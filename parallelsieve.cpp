@@ -3,6 +3,8 @@
 #include <time.h>
 #include <iostream>
 #include <cstdlib>
+#include <vector>
+
 
 using namespace std;
 
@@ -11,8 +13,8 @@ int main(int argc, char *argv[])
 	long long int N;
 	int sqrtN;
 
-	int *prime_sqrtN;
-	int *prime_prll;
+	char *prime_sqrtN;
+	char *prime_prll;
 
 	int lower;
 	int upper;
@@ -20,6 +22,13 @@ int main(int argc, char *argv[])
 	
 	int rank;
 	int numproc;
+
+	vector<long long int> localprimes;
+	vector<long long int> primes;
+
+
+	timespec timer;
+	double start,end;
 
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
@@ -29,6 +38,8 @@ int main(int argc, char *argv[])
 	{
 		cout<<"Enter N: ";
 		cin>>N;
+		clock_gettime(CLOCK_REALTIME,&timer);
+		start = timer.tv_sec;
 	}
 	// Broadcast N
 	MPI_Bcast(&N,1,MPI_LONG_LONG,0,MPI_COMM_WORLD);
@@ -41,10 +52,10 @@ int main(int argc, char *argv[])
 		upper = N;
 	else
 		upper = lower + dividesize - 1;
-	cout<<"Rank: "<<rank<<"Lower: "<<lower<<"Upper: "<<upper<<endl;
+	// cout<<"Rank: "<<rank<<"Lower: "<<lower<<"Upper: "<<upper<<endl;
 
-	prime_sqrtN = (int *)calloc((sqrtN+1),sizeof(int));
-	prime_prll = (int *)calloc((upper-lower+1),sizeof(int));
+	prime_sqrtN = (char *)calloc((sqrtN+1),sizeof(char));
+	prime_prll = (char *)calloc((upper-lower+1),sizeof(char));
 	
 	// Marking all prime till sqrt(N)
 	int i,j;
@@ -69,16 +80,62 @@ int main(int argc, char *argv[])
 				prime_prll[j-lower]=1;
 
 		}
-
+	
+	// list of primes
+	// Primes till sqrt(N)
+	
+	if(rank!=0)
+	{
+		for(i=lower;i<=upper;i++)
+			if(prime_prll[i-lower]==0)
+				localprimes.push_back(i);
+	}
+	if(rank==0)
+	{
+		for(i=2;i<=sqrtN;i++)
+			if(prime_sqrtN[i]==0)
+				primes.push_back(i);
+		for(i=lower;i<=upper;i++)
+			if(prime_prll[i-lower]==0)
+				primes.push_back(i);
+		for(i=1;i<numproc;i++)		// i is rank
+		{
+			lower = sqrtN + i*dividesize + 1;
+			if(i == numproc-1)
+				upper = N;
+			else
+				upper = lower + dividesize - 1;
+			localprimes.resize(upper-lower+1);
+			MPI_Recv(&localprimes[0],upper-lower+1,MPI_LONG_LONG,i,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			primes.insert(primes.end(),localprimes.begin(),localprimes.end());
+		}
+	}
+	else
+	{
+		MPI_Send(&localprimes[0],upper-lower+1,MPI_LONG_LONG,0,0,MPI_COMM_WORLD);
+	}
+	
+	// time
+	if(rank==0)
+	{
+		clock_gettime(CLOCK_REALTIME,&timer);
+		end = timer.tv_sec;
+		cout<<"time: "<<end-start<<endl;
+	}
 	// Printing
-	// cout<<rank<<endl;
+	/*// cout<<rank<<endl;
 	if(rank==0)
 		for(int i=1;i<sqrtN+1;i++)
 			cout<<i<<": "<<prime_sqrtN[i]<<endl;
 	for(int i=lower;i<=upper;i++)
 		cout<<"rank: "<<rank<<"\t"<<i<<": "<<prime_prll[i-lower]<<endl;
-	cout<<endl;
-
+	cout<<endl;*/
+	if(rank==0)
+	{
+		vector <long long int> :: iterator it;
+		for(it = primes.begin();it!=primes.end();it++)
+			cout<<*it<<endl;
+	}
 	MPI_Finalize();
 
 	return 0;
