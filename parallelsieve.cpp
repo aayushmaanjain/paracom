@@ -66,7 +66,8 @@ int main(int argc, char *argv[])
 	for(i=2;i<=sqrt_sqrtN;i++)
 		if(prime_sqrtN[i]==0)
 			for(j=i*i;j<=sqrtN;j+=i)
-				prime_sqrtN[j]=1;
+				if(prime_sqrtN[j]==0)
+					prime_sqrtN[j]=1;
 
 	// mark the remaining numbers - parallelized list
 	for(i=2;i<=sqrtN;i++)
@@ -79,12 +80,12 @@ int main(int argc, char *argv[])
 				j=((int)lower/i + 1) * i;
 			// cout<<"i: "<<i<<"; lower: "<<lower<<"; j: "<<j<<endl;
 			for(;j<=upper;j+=i)
-				prime_prll[j-lower]=1;
+				if(prime_prll[j-lower]==0)
+					prime_prll[j-lower]=1;
 
 		}
 
-	
-	
+
 	// list of primes
 	// Primes till sqrt(N)
 	
@@ -127,13 +128,6 @@ int main(int argc, char *argv[])
 		cout<<"time: "<<end-start<<endl;
 	}
 	// Printing
-	/*// cout<<rank<<endl;
-	if(rank==0)
-		for(int i=1;i<sqrtN+1;i++)
-			cout<<i<<": "<<prime_sqrtN[i]<<endl;
-	for(int i=lower;i<=upper;i++)
-		cout<<"rank: "<<rank<<"\t"<<i<<": "<<prime_prll[i-lower]<<endl;
-	cout<<endl;*/
 	/*if(rank==0)
 	{
 		vector <long long int> :: iterator it;
