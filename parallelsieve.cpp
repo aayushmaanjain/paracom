@@ -26,6 +26,7 @@ int main(int argc, char *argv[])
 	vector<long long int> localprimes;
 	vector<long long int> primes;
 
+	int size;
 
 	timespec timer;
 	double start,end;
@@ -38,8 +39,9 @@ int main(int argc, char *argv[])
 	{
 		cout<<"Enter N: ";
 		cin>>N;
-		clock_gettime(CLOCK_REALTIME,&timer);
-		start = timer.tv_sec;
+		/*clock_gettime(CLOCK_REALTIME,&timer);
+		start = timer.tv_sec;*/
+		start = MPI_Wtime();
 	}
 	// Broadcast N
 	MPI_Bcast(&N,1,MPI_LONG_LONG,0,MPI_COMM_WORLD);
@@ -80,6 +82,8 @@ int main(int argc, char *argv[])
 				prime_prll[j-lower]=1;
 
 		}
+
+	
 	
 	// list of primes
 	// Primes till sqrt(N)
@@ -100,26 +104,26 @@ int main(int argc, char *argv[])
 				primes.push_back(i);
 		for(i=1;i<numproc;i++)		// i is rank
 		{
-			lower = sqrtN + i*dividesize + 1;
-			if(i == numproc-1)
-				upper = N;
-			else
-				upper = lower + dividesize - 1;
-			localprimes.resize(upper-lower+1);
-			MPI_Recv(&localprimes[0],upper-lower+1,MPI_LONG_LONG,i,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			//size=-1;
+			MPI_Recv(&size,1,MPI_INT,i,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			localprimes.resize(size);
+			MPI_Recv(&localprimes[0],size,MPI_LONG_LONG,i,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 			primes.insert(primes.end(),localprimes.begin(),localprimes.end());
 		}
 	}
 	else
 	{
-		MPI_Send(&localprimes[0],upper-lower+1,MPI_LONG_LONG,0,0,MPI_COMM_WORLD);
+		size = localprimes.size();
+		MPI_Send(&size,1,MPI_INT,0,0,MPI_COMM_WORLD);
+		MPI_Send(&localprimes[0],size,MPI_LONG_LONG,0,0,MPI_COMM_WORLD);
 	}
-	
+
 	// time
 	if(rank==0)
 	{
-		clock_gettime(CLOCK_REALTIME,&timer);
-		end = timer.tv_sec;
+		/*clock_gettime(CLOCK_REALTIME,&timer);
+		end = timer.tv_sec;*/
+		end = MPI_Wtime();
 		cout<<"time: "<<end-start<<endl;
 	}
 	// Printing
@@ -130,12 +134,12 @@ int main(int argc, char *argv[])
 	for(int i=lower;i<=upper;i++)
 		cout<<"rank: "<<rank<<"\t"<<i<<": "<<prime_prll[i-lower]<<endl;
 	cout<<endl;*/
-	if(rank==0)
+	/*if(rank==0)
 	{
 		vector <long long int> :: iterator it;
 		for(it = primes.begin();it!=primes.end();it++)
 			cout<<*it<<endl;
-	}
+	}*/
 	MPI_Finalize();
 
 	return 0;
