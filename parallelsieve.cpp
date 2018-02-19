@@ -10,21 +10,21 @@ char* createBV(long long int len) {
 	return a;
 }
 
-void setBV(char* a, long long k) {
+inline void setBV(char* a, long long k) {
 	a[k/8] = a[k/8] | 1 << (k%8);
 }
 
-void resetBV(char* a, long long k) {
+inline void resetBV(char* a, long long k) {
 	a[k/8] = a[k/8] & ~(1 << (k%8));
 }
 
-bool test(char* a, long long k) {
+inline bool test(char* a, long long k) {
 	return (a[k/8] & 1 << (k%8)) != 0;
 }
 
 int main(int argc, char *argv[])
 {
-	long long int N;
+	long long int N = 10000000000;
 	long long int sqrtN;
 
 	char *prime_sqrtN;
@@ -32,6 +32,7 @@ int main(int argc, char *argv[])
 
 	long long int lower;
 	long long int upper;
+	long long int temp;
 	long long int dividesize;
 
 	int rank;
@@ -40,26 +41,29 @@ int main(int argc, char *argv[])
 	vector<long long int> localprimes;
 	vector<long long int> primes;
 
-	int size;
+	long long int size;
+	vector <long long int> sizes; 
+	// int sizein;
 
-	double start,end;
+	double start,end,end1,end2,end3;
 
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 	MPI_Comm_size(MPI_COMM_WORLD,&numproc);
 	// Master gets program parameter N
-	if(rank==0)
-	{
-		cout<<"Enter N: ";
-		cin>>N;
-		/*clock_gettime(CLOCK_REALTIME,&timer);
-		start = timer.tv_sec;*/
-		start = MPI_Wtime();
-	}
-	// Broadcast N
-	MPI_Bcast(&N,1,MPI_LONG_LONG,0,MPI_COMM_WORLD);
+	// if(rank==0)
+	// {
+	// 	cout<<"Enter N: ";
+	// 	cin>>N;
+	// 	//clock_gettime(CLOCK_REALTIME,&timer);
+	// 	// start = timer.tv_sec;
+	// }
+	start = MPI_Wtime();
 
-	sqrtN = (int)sqrt(N);
+	// // Broadcast N
+	// MPI_Bcast(&N,1,MPI_LONG_LONG,0,MPI_COMM_WORLD);
+
+	sqrtN = (long long int)sqrt(N);
 
 	dividesize = (N - (sqrtN + 1)) / numproc;
 	lower = sqrtN + rank * dividesize + 1;
@@ -71,6 +75,8 @@ int main(int argc, char *argv[])
 
 	prime_sqrtN = createBV(sqrtN+1);
 	prime_prll = createBV(upper-lower+1);
+	
+	end1 = MPI_Wtime();
 
 	// Marking all prime till sqrt(N)
 	long long int i,j;
@@ -81,45 +87,77 @@ int main(int argc, char *argv[])
 			for(j=i*i;j<=sqrtN;j+=i){
 				setBV(prime_sqrtN, j);
 			}
-
+	// time
+	//if(rank==0)
+	{
+		// clock_gettime(CLOCK_REALTIME,&timer);
+		// end = timer.tv_sec;
+		end2 = MPI_Wtime();
+		// cout<<rank<<"time: "<<end-start<<endl;
+	}
 	// mark the remaining numbers - parallelized list
 	for(i=2;i<=sqrtN;++i)
 		if(!test(prime_sqrtN, i))
 		{
 			// DO: could make it more efficient by starting at i^2 if i^2 > lower
-			if(lower%i==0)	// !lower%i not working
-				j=lower;
+			temp = (lower<i*i)?i*i:lower;
+			if(temp%i==0)	// !lower%i not working
+				j=temp;
 			else
 				j=((long long int)lower/i + 1) * i;
 			// cout<<"i: "<<i<<"; lower: "<<lower<<"; j: "<<j<<endl;
 			for(;j<=upper;j+=i)
-				setBV(prime_prll, j-lower);
+				if(!test(prime_prll,j-lower))
+					setBV(prime_prll, j-lower);
 		}
-
+	// time
+	// if(rank==0)
+	{
+		// clock_gettime(CLOCK_REALTIME,&timer);
+		// end = timer.tv_sec;
+		end3 = MPI_Wtime();
+		// cout<<"time"<<rank<<" : "<<end1-start<<'\t'<<end2-start<<'\t'<<end3-start<<endl;
+	}
 	// list of primes
 	// Primes till sqrt(N)
 
+	/*// Remove this
+	if(rank==0)
+	{
+		for(i=2;i<=sqrtN;i++)
+			if(!test(prime_sqrtN, i))
+				localprimes.push_back(i);
+	}*/
 	if(rank!=0)
 	{
 		for(i=lower;i<=upper;i++)
 			if(!test(prime_prll, i-lower))
 				localprimes.push_back(i);
+		free(prime_prll);
 	}
 	if(rank==0)
 	{
 		for(i=2;i<=sqrtN;i++)
 			if(!test(prime_sqrtN, i))
 				primes.push_back(i);
+		free(prime_sqrtN);
 		for(i=lower;i<=upper;i++)
 			if(!test(prime_prll, i-lower))
 				primes.push_back(i);
+		free(prime_prll);
+		sizes.reserve(numproc);
+		sizes[0] = primes.size();
 		for(i=1;i<numproc;i++)		// i is rank
 		{
 			//size=-1;
-			MPI_Recv(&size,1,MPI_INT,i,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-			localprimes.resize(size);
-			MPI_Recv(&localprimes[0],size,MPI_LONG_LONG,i,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-			primes.insert(primes.end(),localprimes.begin(),localprimes.end());
+			MPI_Recv(&sizes[i],1,MPI_LONG_LONG,i,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			sizes[i] += sizes[i-1];
+		}
+		primes.resize(sizes[numproc-1]);
+		for(i=1;i<numproc;i++)
+		{
+			MPI_Recv(&primes[sizes[i-1]],sizes[i]-sizes[i-1],MPI_LONG_LONG,i,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			// primes.insert(primes.end(),localprimes.begin(),localprimes.end());
 		}
 	}
 	else
@@ -127,22 +165,23 @@ int main(int argc, char *argv[])
 		size = localprimes.size();
 		MPI_Send(&size,1,MPI_INT,0,0,MPI_COMM_WORLD);
 		MPI_Send(&localprimes[0],size,MPI_LONG_LONG,0,0,MPI_COMM_WORLD);
+		localprimes.clear();
 	}
 
 	// time
 	if(rank==0)
 	{
-		/*clock_gettime(CLOCK_REALTIME,&timer);
-		end = timer.tv_sec;*/
+		// clock_gettime(CLOCK_REALTIME,&timer);
+		// end = timer.tv_sec;
 		end = MPI_Wtime();
 		cout<<"time: "<<end-start<<endl;
 	}
-	// Printing
-	/*if(rank==0)
+	/*// Printing
+	if(rank==0)
 	{
 		vector <long long int> :: iterator it;
-		for(it = primes.begin();it!=primes.end();it++)
-			cout<<*it<<endl;
+		for(it = primes.begin();it!= primes.end();it++)
+			cout<<rank<<" : "<<*it<<endl;
 	}*/
 	MPI_Finalize();
 
