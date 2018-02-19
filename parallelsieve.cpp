@@ -24,7 +24,7 @@ inline bool test(char* a, long long k) {
 
 int main(int argc, char *argv[])
 {
-	long long int N = 10000000000;
+	long long int N = 1000;
 	long long int sqrtN;
 
 	char *prime_sqrtN;
@@ -96,7 +96,11 @@ int main(int argc, char *argv[])
 		// cout<<rank<<"time: "<<end-start<<endl;
 	}
 	// mark the remaining numbers - parallelized list
-	for(i=2;i<=sqrtN;++i)
+	// i = 2;
+	j = ((lower + 1) / 2) * 2;
+	for(;j<=upper;j+=2)
+		setBV(prime_prll,j-lower);
+	for(i=3;i<=sqrtN;i+=2)
 		if(!test(prime_sqrtN, i))
 		{
 			// DO: could make it more efficient by starting at i^2 if i^2 > lower
@@ -106,7 +110,7 @@ int main(int argc, char *argv[])
 			else
 				j=((long long int)lower/i + 1) * i;
 			// cout<<"i: "<<i<<"; lower: "<<lower<<"; j: "<<j<<endl;
-			for(;j<=upper;j+=i)
+			for(;j<=upper;j+=i*2)
 				if(!test(prime_prll,j-lower))
 					setBV(prime_prll, j-lower);
 		}
