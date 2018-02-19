@@ -90,16 +90,16 @@ int main(int argc, char *argv[])
 
 
 		}
-	if(rank==0)
+/*	if(rank==0)
 	{
 		// clock_gettime(CLOCK_REALTIME,&timer);
 		// end = timer.tv_sec;
 		end = MPI_Wtime();
 		cout<<"time: "<<end-start<<endl;		
 	}
+*/
 
-
-/*	// list of primes
+	// list of primes
 	// Primes till sqrt(N)
 	
 	if(rank!=0)
@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
 		cout<<"time: "<<end-start<<endl;
 		cout<<"#Primes: "<<primes.size()<<endl;
 		
-	}*/
+	}
 	// Printing
 	/*if(rank==0)
 	{
