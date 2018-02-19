@@ -24,7 +24,7 @@ inline bool test(char* a, long long k) {
 
 int main(int argc, char *argv[])
 {
-	long long int N = 1000;
+	long long int N = 10000000000;
 	long long int sqrtN;
 
 	char *prime_sqrtN;
@@ -110,9 +110,12 @@ int main(int argc, char *argv[])
 			else
 				j=((long long int)lower/i + 1) * i;
 			// cout<<"i: "<<i<<"; lower: "<<lower<<"; j: "<<j<<endl;
-			for(;j<=upper;j+=i*2)
+			if(j%2==0)
+				j = j + i;
+			for(;j<=upper;j+=i*2){
 				if(!test(prime_prll,j-lower))
 					setBV(prime_prll, j-lower);
+			}
 		}
 	// time
 	// if(rank==0)
@@ -146,7 +149,7 @@ int main(int argc, char *argv[])
 				primes.push_back(i);
 		free(prime_sqrtN);
 		for(i=lower;i<=upper;i++)
-			if(!test(prime_prll, i-lower))
+			if(!test(prime_prll, i-lower))	
 				primes.push_back(i);
 		free(prime_prll);
 		sizes.reserve(numproc);
@@ -179,9 +182,10 @@ int main(int argc, char *argv[])
 		// end = timer.tv_sec;
 		end = MPI_Wtime();
 		cout<<"time: "<<end-start<<endl;
+		cout<<"#Primes: "<<primes.size()<<endl;
 	}
-	/*// Printing
-	if(rank==0)
+	// Printing
+	/*if(rank==0)
 	{
 		vector <long long int> :: iterator it;
 		for(it = primes.begin();it!= primes.end();it++)
