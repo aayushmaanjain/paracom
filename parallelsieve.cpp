@@ -4,22 +4,22 @@
 using namespace std;
 
 char* createBV(long long int len) {
-	long long int size = (len + 7)/8;
+	long long int size = (len + 7) >> 3;
 	char* a = new char[size];
 	memset(a, 0, size);
 	return a;
 }
 
 inline void setBV(char* a, long long k) {
-	a[k/8] = a[k/8] | 1 << (k%8);
+	a[k>>3] = a[k>>3] | 1 << (k&7);
 }
 
 inline void resetBV(char* a, long long k) {
-	a[k/8] = a[k/8] & ~(1 << (k%8));
+	a[k>>3] = a[k>>3] & ~(1 << (k&7));
 }
 
 inline bool test(char* a, long long k) {
-	return (a[k/8] & 1 << (k%8)) != 0;
+	return a[k>>3] & 1 << (k&7);
 }
 
 int main(int argc, char *argv[])
@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
 	vector<long long int> primes;
 
 	long long int size;
-	vector <long long int> sizes; 
+	vector <long long int> sizes;
 	// int sizein;
 
 	double start,end,end1,end2,end3;
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 
 	prime_sqrtN = createBV(sqrtN+1);
 	prime_prll = createBV(upper-lower+1);
-	
+
 	end1 = MPI_Wtime();
 
 	// Marking all prime till sqrt(N)
