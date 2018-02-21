@@ -8,6 +8,7 @@
 #include <vector>
 #include <algorithm>
 #include <cstring>
+#include <dirent.h>
 // #include <mpi.h>
 
 using namespace std;
@@ -17,11 +18,25 @@ bool cmp(pair<string, int> a, pair<string, int> b) {
 }
 
 int main() {
+	string folder_name = "./docs";
 	vector<string> fnames;
-	fnames.push_back("file1.txt");
-	fnames.push_back("file2.txt");
 	vector<string>::iterator iter;
 	map<string, map<string, int> > doc_list;
+
+	DIR *dir;
+	struct dirent *ent;
+	if ((dir = opendir (folder_name.c_str())) != NULL) {
+		/* print all the files and directories within directory */
+		while ((ent = readdir (dir)) != NULL) {
+			fnames.push_back(string(ent->d_name));
+		}
+		closedir (dir);
+	}
+	else {
+		/* could not open directory */
+		perror ("");
+		return EXIT_FAILURE;
+	}
 
 	for (iter = fnames.begin(); iter != fnames.end(); ++iter) {
 		std::ifstream t(*iter);
