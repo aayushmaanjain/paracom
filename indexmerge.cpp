@@ -62,8 +62,10 @@ int main(int argc, char *argv[])
 	recvsizes = (unsigned long int *)malloc(numproc*sizeof(unsigned long int));
 	recvsizes[rank] = 1;
 	recvind = (int *)malloc((numproc)*sizeof(int));
-	for(i=0;i<numproc;i++)
-		recvind[i]=-1;
+	sendind = (int *)malloc((numproc)*sizeof(int));
+
+	// for(i=0;i<numproc;i++)
+	// 	recvind[i]=-1;
 
 	// // replace this with building of local indices
 	// if(rank==0)
@@ -166,32 +168,32 @@ int main(int argc, char *argv[])
 		// free memory from send buffer if send done
 		MPI_Testsome(numproc, sendrequest1, &senddone, sendind, status);
 		if(senddone > 0)	{
-			for(i=0;i<senddone;i++)
-				free(sendbuf[i]);
+			for(i=0;i<senddone;i++)	{
+				free(sendbuf[sendind[i]]);
+				cout<<rank<<" sent: "<<sendind[i]<<"\t"<<flush;
+			}
+			cout<<endl;
 		}
-
+		// cout<<"hello\n"<<flush;
 		MPI_Testsome(numproc, recvrequest1, &recvdone, recvind, status);
 		if(recvdone > 0)	{
-			// cout<<rank<<" Received: "<<recvdone<<endl;
+			cout<<rank<<" Received: "<<recvdone<<endl<<flush;
 			for(i=0;i<recvdone;i++)	{
-				// cout<<rank<<" : "<<recvind[i]<<"\t";
-				if(recvind[i]!=rank)	{
-					//deserialize
+				cout<<rank<<" : "<<recvind[i]<<"\t"<<flush;
+				// if(recvind[i]!=rank)	{
+				// 	//deserialize
 
-					//insert into global index
+				// 	//insert into global index
 
-				}
-				// free up memory from receive buffer if receive done and added to global list
-				// DO : could move it up but then take care of the recvbuf[rank]
-				free(recvbuf[i]);
+				// }
+				// // free up memory from receive buffer if receive done and added to global list
+				// // DO : could move it up but then take care of the recvbuf[i]
+				free(recvbuf[recvind[i]]);
 			}
-			// cout<<endl;
+			cout<<endl;
 			rem_merge -= recvdone;
 		}
 	}
-	//free up memory
-	free(sendbuf);
-	free(recvbuf);
 	
 	// cout<<"received: "<<recvdone<<endl<<"receivedlist: ";
 	// for(i=0;i<numproc;i++)
@@ -219,7 +221,12 @@ int main(int argc, char *argv[])
 	// 	// cout<<itr->first<<" : "<<itr->second.first<<" : "<<itr->second.second<<endl; 
 	// 	for(vecitr=mapitr->second.begin();vecitr!=mapitr->second.end();vecitr++)
 	// 		cout<<mapitr->first<<" : "<<vecitr->first<<" : "<<vecitr->second<<endl;
-
+	
+	// free(recvsizes);
+	// free(sendsizes);
+	//free up memory
+	free(sendbuf);
+	free(recvbuf);
 
 	MPI_Finalize();
 	return 0;
