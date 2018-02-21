@@ -1,6 +1,7 @@
 #include <bits/stdc++.h>
 #include <cereal/types/map.hpp>
 #include <cereal/types/string.hpp>
+#include <cereal/types/vector.hpp>
 #include <cereal/types/utility.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/archives/json.hpp>
@@ -8,61 +9,37 @@
 
 using namespace std;
 
-class Stuff
-{
-  public:
-  	Stuff(){
-
-  	}
-
-	Stuff(map<string, pair<string, int> > data){
-	  this->data = data;
-	}
-
-	map<string, pair<string, int> > getData() {
-		return this->data;
-	}
-
-  private:
-	std::map<std::string, std::pair<std::string, int> > data;
-
-	friend class cereal::access;
-
-	template <class Archive>
-	void serialize( Archive & ar )
-	{
-	  ar( data );
-	}
-};
-
 int main(){
-	std::stringstream ss;
+	std::stringstream ostream;
 
-	{
+	{//Serialization
 		map<string, pair<string, int> > local;
 
 		local["abc"] = make_pair("1.txt", 3);
 		local["def"] = make_pair("2.txt", 4);
 		local["ghi"] = make_pair("3.txt", 5);
 
-		cereal::BinaryOutputArchive oarchive(ss);
+		// cereal::JSONOutputArchive oarchive(ostream);
+		cereal::BinaryOutputArchive oarchive(ostream);
 
-		Stuff myStuff(local);
-
-		oarchive( myStuff );
-
-		string ostring = ss.str();
+		oarchive( local );
 	}
 
-	cereal::BinaryInputArchive iarchive(ss);
+	string ostring = ostream.str(); //Transmit this string
 
-	Stuff reconstructed;
+	{//Deserialization
+		std::stringstream istream(ostring);
 
-	iarchive(reconstructed);
+		// cereal::JSONInputArchive iarchive(ss);
+		cereal::BinaryInputArchive iarchive(istream);
 
-	map<string, pair<string, int> > new_data = reconstructed.getData();
+		map<string, pair<string, int> > new_data;
 
-	cout << new_data["def"].second << endl;
+		iarchive(new_data);
 
-  	return 0;
+		// cout << new_data["def"].first << endl;
+	}
+
+
 }
+
