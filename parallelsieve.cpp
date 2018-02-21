@@ -1,4 +1,5 @@
 #include <bits/stdc++.h>
+#include <stdlib.h>
 #include <mpi.h>
 
 using namespace std;
@@ -24,7 +25,7 @@ inline bool test(char* a, long long k) {
 
 int main(int argc, char *argv[])
 {
-	long long int N = 10000000000;
+	long long int N = atoll(argv[argc-1]);
 	long long int sqrtN;
 
 	char *prime_sqrtN;
@@ -47,7 +48,8 @@ int main(int argc, char *argv[])
 
 	double start,end,end1,end2,end3;
 
-	MPI_Init(&argc,&argv);
+	int mpi_argc = argc - 1;
+	MPI_Init(&mpi_argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 	MPI_Comm_size(MPI_COMM_WORLD,&numproc);
 	// Master gets program parameter N
@@ -181,7 +183,7 @@ int main(int argc, char *argv[])
 		// clock_gettime(CLOCK_REALTIME,&timer);
 		// end = timer.tv_sec;
 		end = MPI_Wtime();
-		cout<<"time: "<<end-start<<endl;
+		cout<<"time: "<<end3-start<<"\t"<<end-start<<endl;
 		cout<<"#Primes: "<<primes.size()<<endl;
 	}
 	// Printing
